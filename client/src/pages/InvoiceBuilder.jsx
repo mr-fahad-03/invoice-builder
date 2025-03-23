@@ -233,7 +233,7 @@ const InvoiceBuilder = () => {
       doc.text("Bank Account:", 10, finalY + 25)
 
       doc.setFont("helvetica", "normal")
-      doc.text("By Cash", 40, finalY + 15)
+      doc.text(" Cash / Online Payment", 40, finalY + 15)
       doc.text("_____________________", 40, finalY + 25)
 
       // Totals
