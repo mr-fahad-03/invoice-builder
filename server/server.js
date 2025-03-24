@@ -21,10 +21,10 @@ const PORT = process.env.PORT || 5000
 
 app.use(cors(
   {
-  origin: ["https://invoice-builder-red.vercel.app"],
+  origin: ["https://invoice-builder-red.vercel.app", "https://invoice-builder-api.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  credentials: true
-  
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
   }
   ));
 app.use(express.json())
@@ -155,10 +155,16 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 app.get("/", async (req, res) => {
-  res.send("Hello World");
+  res.json({ message: "Invoice Builder API is running" });
 });
 
-
+app.get("/api/health", async (req, res) => {
+  res.json({ 
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Auth routes
 app.post("/api/auth/login", async (req, res) => {
@@ -453,6 +459,15 @@ app.get("/api/test", async (req, res) => {
     })
   }
 })
+
+// Catch-all route for undefined paths
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: `Cannot ${req.method} ${req.url}`,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Global error handler middleware
 app.use((err, req, res, next) => {
