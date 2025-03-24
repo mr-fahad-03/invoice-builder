@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 5000
 
 app.use(cors(
   {
-  origin: ["https://invoice-builder-api-madina.vercel.app"],
+  origin: ["https://invoice-builder-red.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true
   
@@ -154,6 +154,11 @@ const authenticateToken = (req, res, next) => {
 }
 
 // Routes
+app.get("/", async (req, res) => {
+  res.send("Hello World");
+});
+
+
 
 // Auth routes
 app.post("/api/auth/login", async (req, res) => {

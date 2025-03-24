@@ -11,7 +11,7 @@ const ServerTest = () => {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch("https://invoice-builder-iota.vercel.app/api/test")
+        const response = await fetch("https://invoice-builder-api.vercel.app/api/test")
         const data = await response.json()
 
         if (response.ok) {

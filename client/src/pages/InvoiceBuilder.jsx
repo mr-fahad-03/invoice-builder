@@ -33,7 +33,7 @@ const InvoiceBuilder = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("https://invoice-builder-iota.vercel.app/api/products")
+      const response = await fetch("https://invoice-builder-api.vercel.app/api/products")
       const data = await response.json()
 
       if (!response.ok) {
@@ -333,7 +333,7 @@ const InvoiceBuilder = () => {
     try {
       console.log("Sending to server:", JSON.stringify(invoice)) // Debug log
 
-      const response = await fetch("https://invoice-builder-iota.vercel.app/api/invoices", {
+      const response = await fetch("https://invoice-builder-api.vercel.app/api/invoices", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -401,7 +401,7 @@ const InvoiceBuilder = () => {
               >
                 <div className="h-40 bg-gray-200 dark:bg-gray-700 overflow-hidden">
                   <img
-                    src={`https://invoice-builder-iota.vercel.app/${product.image}`}
+                    src={`https://invoice-builder-api.vercel.app/${product.image}`}
                     alt={product.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
