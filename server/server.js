@@ -21,10 +21,10 @@ const PORT = process.env.PORT || 5000
 
 app.use(cors(
   {
-  origin: ["https://invoice-builder-red.vercel.app", "https://invoice-builder-api.vercel.app"],
+  origin: ["https://invoice-builder-red.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
+  credentials: true
+  
   }
   ));
 app.use(express.json())
@@ -154,29 +154,11 @@ const authenticateToken = (req, res, next) => {
 }
 
 // Routes
-app.get("/", (req, res) => {
-  res.status(200).json({ 
-    message: "Invoice Builder API is running",
-    version: "1.0.0",
-    endpoints: [
-      "/api/auth/login",
-      "/api/products",
-      "/api/invoices",
-      "/api/stats",
-      "/api/health"
-    ]
-  });
+app.get("/", async (req, res) => {
+  res.send("Hello World");
 });
 
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ 
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    database: db ? "connected" : "not connected"
-  });
-});
+
 
 // Auth routes
 app.post("/api/auth/login", async (req, res) => {
@@ -287,4 +269,212 @@ app.put("/api/products/:id", authenticateToken, upload.single("image"), async (r
         fs.unlinkSync(path.join(__dirname, existingProduct.image))
       }
 
-      imagePath = `
+      imagePath = `uploads/${req.file.filename}`
+    }
+
+    await db.run("UPDATE products SET name = ?, price = ?, description = ?, image = ? WHERE id = ?", [
+      name,
+      price,
+      description || "",
+      imagePath,
+      productId,
+    ])
+
+    const updatedProduct = await db.get("SELECT * FROM products WHERE id = ?", [productId])
+
+    res.json(updatedProduct)
+  } catch (error) {
+    console.error("Error updating product:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.delete("/api/products/:id", authenticateToken, async (req, res) => {
+  try {
+    const productId = req.params.id
+
+    const existingProduct = await db.get("SELECT * FROM products WHERE id = ?", [productId])
+
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Product not found" })
+    }
+
+    // Delete image file
+    if (existingProduct.image && fs.existsSync(path.join(__dirname, existingProduct.image))) {
+      fs.unlinkSync(path.join(__dirname, existingProduct.image))
+    }
+
+    await db.run("DELETE FROM products WHERE id = ?", [productId])
+
+    res.json({ message: "Product deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting product:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Invoice routes
+app.get("/api/invoices", async (req, res) => {
+  try {
+    const invoices = await db.all("SELECT * FROM invoices ORDER BY date DESC")
+
+    // Parse items JSON
+    const parsedInvoices = invoices.map((invoice) => ({
+      ...invoice,
+      items: JSON.parse(invoice.items),
+    }))
+
+    res.json(parsedInvoices)
+  } catch (error) {
+    console.error("Error fetching invoices:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/invoices/:id", async (req, res) => {
+  try {
+    const invoice = await db.get("SELECT * FROM invoices WHERE id = ?", [req.params.id])
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Invoice not found" })
+    }
+
+    // Parse items JSON
+    invoice.items = JSON.parse(invoice.items)
+
+    res.json(invoice)
+  } catch (error) {
+    console.error("Error fetching invoice:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.post("/api/invoices", async (req, res) => {
+  try {
+    const { id, customerName, customerPhone, customerAddress, date, items, subtotal, tax, total } = req.body
+
+    // Log the entire request body for debugging
+    console.log("Invoice request body:", JSON.stringify(req.body, null, 2))
+
+    if (!id || !customerName || !date || !items || !total) {
+      return res.status(400).json({ message: "Missing required fields" })
+    }
+
+    const itemsJson = JSON.stringify(items)
+
+    // Log the values being inserted into the database
+    console.log("Inserting invoice with values:", {
+      id,
+      customerName,
+      customerPhone: customerPhone || "",
+      customerAddress: customerAddress || "",
+      date,
+      itemsCount: items.length,
+      subtotal: subtotal || 0,
+      tax: tax || 0,
+      total,
+    })
+
+    try {
+      await db.run(
+        "INSERT INTO invoices (id, customer_name, customer_phone, customer_address, date, items, subtotal, tax, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, customerName, customerPhone || "", customerAddress || "", date, itemsJson, subtotal || 0, tax || 0, total],
+      )
+
+      console.log("Invoice inserted successfully")
+      res.status(201).json({ message: "Invoice created successfully" })
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      throw new Error(`Database error: ${dbError.message}`)
+    }
+  } catch (error) {
+    console.error("Error creating invoice:", error)
+    console.error("Error stack:", error.stack)
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      stack: error.stack,
+    })
+  }
+})
+
+app.delete("/api/invoices/:id", async (req, res) => {
+  try {
+    const invoiceId = req.params.id
+
+    const existingInvoice = await db.get("SELECT * FROM invoices WHERE id = ?", [invoiceId])
+
+    if (!existingInvoice) {
+      return res.status(404).json({ message: "Invoice not found" })
+    }
+
+    await db.run("DELETE FROM invoices WHERE id = ?", [invoiceId])
+
+    res.json({ message: "Invoice deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting invoice:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Stats route
+app.get("/api/stats", async (req, res) => {
+  try {
+    const totalProducts = await db.get("SELECT COUNT(*) as count FROM products")
+    const totalInvoices = await db.get("SELECT COUNT(*) as count FROM invoices")
+    const totalRevenue = await db.get("SELECT SUM(total) as sum FROM invoices")
+
+    res.json({
+      totalProducts: totalProducts.count || 0,
+      totalInvoices: totalInvoices.count || 0,
+      totalRevenue: totalRevenue.sum || 0,
+    })
+  } catch (error) {
+    console.error("Error fetching stats:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Test endpoint to verify database connection
+app.get("/api/test", async (req, res) => {
+  try {
+    // Try a simple query
+    const result = await db.get("SELECT 1 as test")
+    res.json({
+      message: "Database connection successful",
+      result,
+      tables: await db.all("SELECT name FROM sqlite_master WHERE type='table'"),
+    })
+  } catch (error) {
+    console.error("Test endpoint error:", error)
+    res.status(500).json({
+      message: "Database connection failed",
+      error: error.message,
+    })
+  }
+})
+
+// Global error handler middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err)
+  console.error("Error stack:", err.stack)
+  res.status(500).json({
+    message: "An unexpected error occurred",
+    error: err.message,
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  })
+})
+
+// Start server with better error handling
+initializeDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
+    })
+  })
+  .catch((err) => {
+    console.error("Failed to initialize database:", err)
+    console.error("Error stack:", err.stack)
+    process.exit(1)
+  })
+
