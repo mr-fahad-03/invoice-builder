@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       // Fetch stats from server
-      const response = await fetch("http://localhost:5000/api/stats")
+      const response = await fetch("https://invoice-builder-iota.vercel.app/api/stats")
       const data = await response.json()
 
       if (response.ok) {

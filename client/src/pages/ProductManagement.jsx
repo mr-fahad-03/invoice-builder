@@ -25,7 +25,7 @@ const ProductManagement = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/products")
+      const response = await fetch("https://invoice-builder-iota.vercel.app/api/products")
       const data = await response.json()
 
       if (!response.ok) {
@@ -48,7 +48,7 @@ const ProductManagement = () => {
         price: product.price,
         description: product.description || "",
       })
-      setImagePreview(`http://localhost:5000/${product.image}`)
+      setImagePreview(`https://invoice-builder-iota.vercel.app/${product.image}`)
       setIsEditing(true)
     } else {
       setCurrentProduct({
@@ -135,8 +135,8 @@ const ProductManagement = () => {
 
     try {
       const url = isEditing
-        ? `http://localhost:5000/api/products/${currentProduct.id}`
-        : "http://localhost:5000/api/products"
+        ? `https://invoice-builder-iota.vercel.app/api/products/${currentProduct.id}`
+        : "https://invoice-builder-iota.vercel.app/api/products"
 
       const method = isEditing ? "PUT" : "POST"
 
@@ -184,7 +184,7 @@ const ProductManagement = () => {
         return
       }
 
-      const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const response = await fetch(`https://invoice-builder-iota.vercel.app/api/products/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -252,7 +252,7 @@ const ProductManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700">
                       <img
-                        src={`http://localhost:5000/${product.image}`}
+                        src={`https://invoice-builder-iota.vercel.app/${product.image}`}
                         alt={product.name}
                         className="h-full w-full object-cover"
                         onError={(e) => {

@@ -17,7 +17,7 @@ const InvoiceManagement = () => {
 
   const fetchInvoices = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/invoices")
+      const response = await fetch("https://invoice-builder-iota.vercel.app/api/invoices")
       const data = await response.json()
 
       if (!response.ok) {
